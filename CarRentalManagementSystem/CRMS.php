@@ -11,7 +11,7 @@ if ($conn->connect_error) {
 }
 
 if (isset($_POST['addCar'])) {
-    $carId = $_POST['carId'];
+    // $carId = $_POST['carId'];
     $brand = $_POST['brand'];
     $model = $_POST['model'];
     $price = $_POST['price'];

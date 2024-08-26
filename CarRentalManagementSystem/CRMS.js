@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Validate Add Car Form
 function validateAddCarForm() {
-    const carId = document.querySelector("input[name='carId']").value;
+    // const carId = document.querySelector("input[name='carId']").value;
     const brand = document.querySelector("input[name='brand']").value;
     const model = document.querySelector("input[name='model']").value;
     const price = document.querySelector("input[name='price']").value;
