@@ -1,208 +1,124 @@
-import java.sql.*;
-import java.util.Scanner;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class CRMS {
-    public class CarRentalManagementSystem {
+@WebServlet("/CRMS")
+public class CRMS extends HttpServlet {
 
-        // Database connection details
-        static final String DB_URL = "jdbc:mysql://localhost:3306/car_rental_db";
-        static final String USER = "root";
-        static final String PASS = "your_password";  // Replace with your MySQL password
+    private static final Logger LOGGER = Logger.getLogger(CRMS.class.getName());
 
-        public static void main(String[] args) {
-            try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-                 Scanner scanner = new Scanner(System.in)) {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
 
-                // Create database schema if not exists
-                createSchema(conn);
+        String action = request.getParameter("action");
 
-                System.out.println("Car Rental Management System");
+        String dbUrl = "jdbc:mysql://localhost:8080/CarRental";
+        String dbUser = "root";
+        String dbPassword = "harsh16";
 
-                while (true) {
-                    System.out.println("\nMenu:");
-                    System.out.println("1. Add a Car");
-                    System.out.println("2. Rent a Car");
-                    System.out.println("3. Return a Car");
-                    System.out.println("4. Search Available Cars");
-                    System.out.println("5. Exit");
-                    System.out.print("Choose an option: ");
-                    int choice = scanner.nextInt();
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
 
-                    switch (choice) {
-                        case 1:
-                            addCar(conn, scanner);
-                            break;
-                        case 2:
-                            rentCar(conn, scanner);
-                            break;
-                        case 3:
-                            returnCar(conn, scanner);
-                            break;
-                        case 4:
-                            searchAvailableCars(conn);
-                            break;
-                        case 5:
-                            System.out.println("Exiting the system...");
-                            return;
-                        default:
-                            System.out.println("Invalid choice. Please try again.");
-                    }
+            if ("addCar".equals(action)) {
+                String brand = request.getParameter("brand");
+                String model = request.getParameter("model");
+                double price = Double.parseDouble(request.getParameter("price"));
+
+                String sql = "INSERT INTO cars (brand, model, base_price_per_day, is_available) VALUES (?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, brand);
+                    stmt.setString(2, model);
+                    stmt.setDouble(3, price);
+                    stmt.setBoolean(4, true);
+
+                    int result = stmt.executeUpdate();
+                    out.println(result > 0 ? "Car added successfully!" : "Failed to add car.");
                 }
 
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+            } else if ("rentCar".equals(action)) {
+                int carId = Integer.parseInt(request.getParameter("carId"));
+                String customerName = request.getParameter("customerName");
+                int days = Integer.parseInt(request.getParameter("days"));
 
-        // Function to create the necessary schema
-        private static void createSchema(Connection conn) {
-            try (Statement stmt = conn.createStatement()) {
-
-                String createCarsTable = "CREATE TABLE IF NOT EXISTS cars (" +
-                        "car_id INT AUTO_INCREMENT PRIMARY KEY, " +
-                        "brand VARCHAR(255) NOT NULL, " +
-                        "model VARCHAR(255) NOT NULL, " +
-                        "base_price_per_day DOUBLE NOT NULL, " +
-                        "is_available BOOLEAN DEFAULT TRUE" +
-                        ")";
-
-                String createRentalsTable = "CREATE TABLE IF NOT EXISTS rentals (" +
-                        "rental_id INT AUTO_INCREMENT PRIMARY KEY, " +
-                        "car_id INT NOT NULL, " +
-                        "customer_name VARCHAR(255) NOT NULL, " +
-                        "days INT NOT NULL, " +
-                        "FOREIGN KEY (car_id) REFERENCES cars(car_id)" +
-                        ")";
-
-                stmt.executeUpdate(createCarsTable);
-                stmt.executeUpdate(createRentalsTable);
-
-                System.out.println("Database schema created successfully.");
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Function to add a car to the database
-        private static void addCar(Connection conn, Scanner scanner) {
-            try {
-                System.out.print("Enter brand: ");
-                String brand = scanner.next();
-                System.out.print("Enter model: ");
-                String model = scanner.next();
-                System.out.print("Enter price per day: ");
-                double price = scanner.nextDouble();
-
-                String sql = "INSERT INTO cars (brand, model, base_price_per_day, is_available) VALUES (?, ?, ?, 1)";
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setString(1, brand);
-                    pstmt.setString(2, model);
-                    pstmt.setDouble(3, price);
-                    pstmt.executeUpdate();
-                    System.out.println("Car added successfully!");
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Function to rent a car
-        private static void rentCar(Connection conn, Scanner scanner) {
-            try {
-                System.out.print("Enter car ID: ");
-                int carId = scanner.nextInt();
-                System.out.print("Enter customer name: ");
-                String customerName = scanner.next();
-                System.out.print("Enter number of days: ");
-                int days = scanner.nextInt();
-
-                String checkAvailability = "SELECT is_available FROM cars WHERE car_id=?";
-                try (PreparedStatement pstmt = conn.prepareStatement(checkAvailability)) {
-                    pstmt.setInt(1, carId);
-                    try (ResultSet rs = pstmt.executeQuery()) {
+                String selectCarQuery = "SELECT is_available FROM cars WHERE car_id = ?";
+                try (PreparedStatement selectStmt = conn.prepareStatement(selectCarQuery)) {
+                    selectStmt.setInt(1, carId);
+                    try (ResultSet rs = selectStmt.executeQuery()) {
                         if (rs.next() && rs.getBoolean("is_available")) {
-                            String rentCar = "INSERT INTO rentals (car_id, customer_name, days) VALUES (?, ?, ?)";
-                            String updateAvailability = "UPDATE cars SET is_available=0 WHERE car_id=?";
-
-                            try (PreparedStatement rentStmt = conn.prepareStatement(rentCar);
-                                 PreparedStatement updateStmt = conn.prepareStatement(updateAvailability)) {
-
+                            String rentCarQuery = "INSERT INTO rentals (car_id, customer_name, days) VALUES (?, ?, ?)";
+                            try (PreparedStatement rentStmt = conn.prepareStatement(rentCarQuery)) {
                                 rentStmt.setInt(1, carId);
                                 rentStmt.setString(2, customerName);
                                 rentStmt.setInt(3, days);
-                                rentStmt.executeUpdate();
+                                int rentResult = rentStmt.executeUpdate();
 
-                                updateStmt.setInt(1, carId);
-                                updateStmt.executeUpdate();
+                                String updateCarQuery = "UPDATE cars SET is_available = false WHERE car_id = ?";
+                                try (PreparedStatement updateStmt = conn.prepareStatement(updateCarQuery)) {
+                                    updateStmt.setInt(1, carId);
+                                    updateStmt.executeUpdate();
+                                }
 
-                                System.out.println("Car rented successfully!");
+                                System.out.println(rentResult > 0 ? "Car rented successfully!" : "Failed to rent car.");
                             }
                         } else {
-                            System.out.println("Car is not available or does not exist.");
+                            System.out.println("Car is not available or not found.");
                         }
                     }
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
 
-        // Function to return a car
-        private static void returnCar(Connection conn, Scanner scanner) {
-            try {
-                System.out.print("Enter car ID: ");
-                int carId = scanner.nextInt();
+            } else if ("returnCar".equals(action)) {
+                int carId = Integer.parseInt(request.getParameter("carId"));
 
-                String checkRental = "SELECT * FROM rentals WHERE car_id=?";
-                try (PreparedStatement pstmt = conn.prepareStatement(checkRental)) {
-                    pstmt.setInt(1, carId);
-                    try (ResultSet rs = pstmt.executeQuery()) {
+                String selectRentalQuery = "SELECT * FROM rentals WHERE car_id = ?";
+                try (PreparedStatement selectStmt = conn.prepareStatement(selectRentalQuery)) {
+                    selectStmt.setInt(1, carId);
+                    try (ResultSet rs = selectStmt.executeQuery()) {
                         if (rs.next()) {
-                            String deleteRental = "DELETE FROM rentals WHERE car_id=?";
-                            String updateAvailability = "UPDATE cars SET is_available=1 WHERE car_id=?";
-
-                            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteRental);
-                                 PreparedStatement updateStmt = conn.prepareStatement(updateAvailability)) {
-
+                            String deleteRentalQuery = "DELETE FROM rentals WHERE car_id = ?";
+                            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteRentalQuery)) {
                                 deleteStmt.setInt(1, carId);
                                 deleteStmt.executeUpdate();
+                            }
 
+                            String updateCarQuery = "UPDATE cars SET is_available = true WHERE car_id = ?";
+                            try (PreparedStatement updateStmt = conn.prepareStatement(updateCarQuery)) {
                                 updateStmt.setInt(1, carId);
                                 updateStmt.executeUpdate();
-
-                                System.out.println("Car returned successfully!");
                             }
+
+                            out.println("Car returned successfully!");
                         } else {
-                            System.out.println("Car is not currently rented.");
+                            out.println("Car was not rented.");
                         }
                     }
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
 
-        // Function to search for available cars
-        private static void searchAvailableCars(Connection conn) {
-            try {
-                String sql = "SELECT * FROM cars WHERE is_available=1";
-                try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery(sql)) {
-
-                    System.out.println("Available Cars:");
-                    System.out.println("Car ID | Brand | Model | Price Per Day");
+            } else if ("searchCar".equals(action)) {
+                String selectAvailableCarsQuery = "SELECT * FROM cars WHERE is_available = true";
+                try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(selectAvailableCarsQuery)) {
+                    out.println("<table>");
+                    out.println("<tr><th>Car ID</th><th>Brand</th><th>Model</th><th>Price Per Day</th></tr>");
                     while (rs.next()) {
-                        System.out.println(rs.getInt("car_id") + " | " +
-                                rs.getString("brand") + " | " +
-                                rs.getString("model") + " | " +
-                                rs.getDouble("base_price_per_day"));
+                        out.println("<tr><td>" + rs.getInt("car_id") + "</td><td>" + rs.getString("brand") + "</td><td>" + rs.getString("model") + "</td><td>" + rs.getDouble("base_price_per_day") + "</td></tr>");
                     }
+                    out.println("</table>");
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error processing request", e);
+            out.println("Error: " + e.getMessage());
         }
     }
 }
-
