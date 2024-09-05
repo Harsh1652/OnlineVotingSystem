@@ -26,7 +26,7 @@ public class CRMS extends HttpServlet {
 
         String dbUrl = "jdbc:mysql://localhost:8080/CarRental";
         String dbUser = "root";
-        String dbPassword = "harsh16";
+        String dbPassword = "Your Password";   // Your Password
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
 
