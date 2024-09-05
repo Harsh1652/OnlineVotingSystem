@@ -1,8 +1,8 @@
 // Add an event listener for form submissions
 document.addEventListener("DOMContentLoaded", function() {
-    const addCarForm = document.querySelector("form[action='car_rental.php'][method='post']:nth-of-type(1)");
-    const rentCarForm = document.querySelector("form[action='car_rental.php'][method='post']:nth-of-type(2)");
-    const returnCarForm = document.querySelector("form[action='car_rental.php'][method='post']:nth-of-type(3)");
+    const addCarForm = document.querySelector("form[action='CRMS'][method='post']:nth-of-type(1)");
+    const rentCarForm = document.querySelector("form[action='CRMS'][method='post']:nth-of-type(2)");
+    const returnCarForm = document.querySelector("form[action='CRMS'][method='post']:nth-of-type(3)");
 
     addCarForm.addEventListener("submit", function(event) {
         if (!validateAddCarForm()) {
@@ -25,12 +25,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Validate Add Car Form
 function validateAddCarForm() {
-    // const carId = document.querySelector("input[name='carId']").value;
     const brand = document.querySelector("input[name='brand']").value;
     const model = document.querySelector("input[name='model']").value;
     const price = document.querySelector("input[name='price']").value;
 
-    if (carId === "" || brand === "" || model === "" || price === "") {
+    if (brand === "" || model === "" || price === "") {
         alert("All fields are required for adding a car.");
         return false;
     }
@@ -43,7 +42,7 @@ function validateAddCarForm() {
 
 // Validate Rent Car Form
 function validateRentCarForm() {
-    const carId = document.querySelector("form[action='car_rental.php'][method='post']:nth-of-type(2) input[name='carId']").value;
+    const carId = document.querySelector("form[action='CRMS'][method='post']:nth-of-type(2) input[name='carId']").value;
     const customerName = document.querySelector("input[name='customerName']").value;
     const days = document.querySelector("input[name='days']").value;
 
@@ -60,7 +59,7 @@ function validateRentCarForm() {
 
 // Validate Return Car Form
 function validateReturnCarForm() {
-    const carId = document.querySelector("form[action='car_rental.php'][method='post']:nth-of-type(3) input[name='carId']").value;
+    const carId = document.querySelector("form[action='CRMS'][method='post']:nth-of-type(3) input[name='carId']").value;
 
     if (carId === "") {
         alert("Car ID is required for returning a car.");
